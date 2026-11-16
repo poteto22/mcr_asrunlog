@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCR As-Run Comparator — เปรียบเทียบผังออกอากาศกับเวลาที่เล่นจริง</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="station-tag" aria-hidden="true">MCR</div>
+      <div>
+        <h1 class="app-title">เปรียบเทียบผังออกอากาศกับ As-Run Log</h1>
+        <p class="app-subtitle" id="logMeta">พร้อมใช้งาน</p>
+      </div>
+    </div>
+
+    <div class="topbar-controls">
+      <div class="control-group">
+        <label for="dateSelect" class="sr-only">เลือกวันที่ผังออกอากาศ</label>
+        <select id="dateSelect" class="select-date" aria-label="เลือกวันที่ผังออกอากาศ" disabled>
+          <option value="">ยังไม่มีผังออกอากาศ</option>
+        </select>
+      </div>
+
+      <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+      <button type="button" id="importBtn" class="btn btn-primary">
+        Import ผัง
+      </button>
+      <button type="button" id="refreshBtn" class="btn" disabled>
+        รีเฟรช log
+      </button>
+      <button type="button" id="exportBtn" class="btn" disabled>
+        Export Excel
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="noticeBanner" class="banner banner-error" role="alert" hidden>
+      <span id="noticeText"></span>
+      <button type="button" id="noticeClose" class="banner-close" aria-label="ปิดการแจ้งเตือน">✕</button>
+    </div>
+
+    <div id="logErrorBanner" class="banner banner-warn" role="alert" hidden>
+      <span class="tally-dot tally-missing" aria-hidden="true"></span>
+      <span id="logErrorText"></span>
+    </div>
+
+    <section id="emptyState" class="empty-state" hidden>
+      <div class="empty-card">
+        <div class="empty-tag">NO SCHEDULE LOADED</div>
+        <h2>ยังไม่มีผังออกอากาศในระบบ</h2>
+        <p>เลือกไฟล์ผังออกอากาศรายวันเพื่อเริ่มต้นเปรียบเทียบกับ As-Run Log จากระบบออกอากาศ</p>
+        <div class="filename-spec">
+          <span>รูปแบบชื่อไฟล์ที่รองรับ:</span>
+          <code>YYYY-MM-DD.xlsx</code>
+          <span class="spec-example">เช่น <code>2026-11-16.xlsx</code></span>
+        </div>
+        <button type="button" id="emptyImportBtn" class="btn btn-primary btn-lg">
+          เลือกไฟล์ผังออกอากาศ (.xlsx)
+        </button>
+      </div>
+    </section>
+
+    <section id="workspace" hidden>
+      <div class="summary-bar" role="region" aria-label="สรุปผลการเปรียบเทียบและตัวกรอง">
+        <button type="button" class="summary-item" data-filter="played" aria-pressed="false">
+          <span class="summary-label">
+            <span class="tally-dot tally-played" aria-hidden="true"></span>
+            เล่นแล้ว
+          </span>
+          <span class="summary-value" id="countPlayed">0</span>
+        </button>
+
+        <button type="button" class="summary-item" data-filter="swapped" aria-pressed="false">
+          <span class="summary-label">
+            <span class="tally-dot tally-swapped" aria-hidden="true"></span>
+            สลับลำดับ
+          </span>
+          <span class="summary-value" id="countSwapped">0</span>
+        </button>
+
+        <button type="button" class="summary-item" data-filter="missing" aria-pressed="false">
+          <span class="summary-label">
+            <span class="tally-dot tally-missing" aria-hidden="true"></span>
+            ไม่พบการเล่น
+          </span>
+          <span class="summary-value" id="countMissing">0</span>
+        </button>
+
+        <button type="button" class="summary-item" data-filter="pending" aria-pressed="false">
+          <span class="summary-label">
+            <span class="tally-dot tally-pending" aria-hidden="true"></span>
+            รอออกอากาศ
+          </span>
+          <span class="summary-value" id="countPending">0</span>
+        </button>
+
+        <button type="button" class="summary-item is-active" data-filter="all" aria-pressed="true">
+          <span class="summary-label">ทั้งหมด</span>
+          <span class="summary-value" id="countTotal">0</span>
+        </button>
+      </div>
+
+      <div class="workspace-body">
+        <aside class="program-sidebar" aria-label="รายชื่อโปรแกรมในผัง">
+          <div class="sidebar-header">รายการในผัง</div>
+          <ul id="programList" class="program-list"></ul>
+        </aside>
+
+        <div class="table-wrap" id="tableWrap">
+          <table class="schedule-table" id="scheduleTable">
+            <thead>
+              <tr>
+                <th class="col-brk">เบรก</th>
+                <th class="col-title">ชื่อไฟล์</th>
+                <th class="col-len">ความยาว</th>
+                <th class="col-aoe">AOE</th>
+                <th class="col-qt">Quotation</th>
+                <th class="col-time">เวลาที่เล่น</th>
+                <th class="col-status">สถานะ</th>
+                <th class="col-log-title">ชื่อไฟล์จาก log</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="confirmDialog" class="modal">
+    <form method="dialog" class="modal-box">
+      <div class="modal-header">
+        <h2 id="modalTitle">ยืนยันการ Import ผังออกอากาศ</h2>
+      </div>
+      <div class="modal-body">
+        <p id="modalMessage"></p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="modalCancel" class="btn">ยกเลิก</button>
+        <button type="button" id="modalConfirm" class="btn btn-primary">ยืนยัน</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "mcr-asrunlog",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "test": "node --test lib/",
+    "seed": "node --env-file=.env dev/seed.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.0"
+  }
+}
