@@ -17,11 +17,41 @@
     </div>
 
     <div class="topbar-controls">
-      <div class="control-group">
-        <label for="dateSelect" class="sr-only">เลือกวันที่ผังออกอากาศ</label>
-        <select id="dateSelect" class="select-date" aria-label="เลือกวันที่ผังออกอากาศ" disabled>
-          <option value="">ยังไม่มีผังออกอากาศ</option>
-        </select>
+      <div class="control-group datepicker-wrap" id="datePickerWrap">
+        <button
+          type="button"
+          id="datePickerBtn"
+          class="btn datepicker-btn"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-label="เลือกวันที่ผังออกอากาศ"
+        >
+          <span class="datepicker-icon" aria-hidden="true">📅</span>
+          <span id="datePickerLabel">ยังไม่มีผังออกอากาศ</span>
+          <span class="datepicker-caret" aria-hidden="true">▾</span>
+        </button>
+
+        <div
+          id="calendarPopover"
+          class="calendar-popover"
+          role="dialog"
+          aria-label="ปฏิทินเลือกวันที่ผังออกอากาศ"
+          hidden
+        >
+          <div class="calendar-header">
+            <button type="button" id="calPrevMonth" class="cal-nav-btn" aria-label="เดือนก่อนหน้า">‹</button>
+            <div id="calMonthLabel" class="cal-month-label"></div>
+            <button type="button" id="calNextMonth" class="cal-nav-btn" aria-label="เดือนถัดไป">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
+          </div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+          <div class="calendar-footer">
+            <span class="tally-dot tally-played" aria-hidden="true"></span>
+            <span id="calLegendText">วันที่ที่มีผังออกอากาศ</span>
+          </div>
+        </div>
       </div>
 
       <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>

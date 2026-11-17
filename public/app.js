@@ -1,4 +1,13 @@
-const dateSelect = document.getElementById('dateSelect');
+const datePickerWrap = document.getElementById('datePickerWrap');
+const datePickerBtn = document.getElementById('datePickerBtn');
+const datePickerLabel = document.getElementById('datePickerLabel');
+const calendarPopover = document.getElementById('calendarPopover');
+const calPrevMonth = document.getElementById('calPrevMonth');
+const calNextMonth = document.getElementById('calNextMonth');
+const calMonthLabel = document.getElementById('calMonthLabel');
+const calendarGrid = document.getElementById('calendarGrid');
+const calLegendText = document.getElementById('calLegendText');
+
 const fileInput = document.getElementById('fileInput');
 const importBtn = document.getElementById('importBtn');
 const emptyImportBtn = document.getElementById('emptyImportBtn');
@@ -32,9 +41,19 @@ const modalCancel = document.getElementById('modalCancel');
 const modalConfirm = document.getElementById('modalConfirm');
 
 let schedules = [];
+let scheduleDateSet = new Set();
 let currentDate = '';
 let currentData = null;
 let activeFilter = 'all';
+
+const now = new Date();
+let calYear = now.getFullYear();
+let calMonth = now.getMonth(); // 0-11
+
+const THAI_MONTHS = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+];
 
 function showNotice(msg) {
   noticeText.textContent = msg;
@@ -88,43 +107,108 @@ async function fetchSchedules() {
   const res = await fetch('/api/schedules');
   if (!res.ok) throw new Error('โหลดรายการผังไม่สำเร็จ');
   schedules = await res.json();
+  scheduleDateSet = new Set(schedules.map(s => s.date));
   renderScheduleOptions();
 }
 
+function formatYMD(y, m, d) {
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function renderCalendar() {
+  calMonthLabel.textContent = `${THAI_MONTHS[calMonth]} ${calYear}`;
+  calendarGrid.innerHTML = '';
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayYMD = formatYMD(now.getFullYear(), now.getMonth(), now.getDate());
+
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('span');
+    empty.className = 'cal-day is-outside';
+    calendarGrid.appendChild(empty);
+  }
+
+  let importedInMonth = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ymd = formatYMD(calYear, calMonth, d);
+    const hasSched = scheduleDateSet.has(ymd);
+    if (hasSched) importedInMonth++;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cal-day';
+    if (ymd === todayYMD) btn.classList.add('is-today');
+    if (hasSched) btn.classList.add('has-schedule');
+    if (ymd === currentDate) btn.classList.add('is-selected');
+
+    const num = document.createElement('span');
+    num.textContent = d;
+    btn.appendChild(num);
+
+    if (hasSched) {
+      btn.title = `ดูผังวันที่ ${ymd}`;
+      btn.addEventListener('click', () => {
+        closeCalendar();
+        selectDate(ymd, true);
+      });
+    } else {
+      btn.disabled = true;
+      btn.title = `ยังไม่มีผังของวันที่ ${ymd}`;
+    }
+
+    calendarGrid.appendChild(btn);
+  }
+
+  calLegendText.textContent = `มีผังออกอากาศแล้ว (${importedInMonth} วันในเดือนนี้ · ทั้งหมด ${schedules.length} วัน)`;
+}
+
+function openCalendar() {
+  if (currentDate && /^\d{4}-\d{2}-\d{2}$/.test(currentDate)) {
+    const [y, m] = currentDate.split('-').map(Number);
+    calYear = y;
+    calMonth = m - 1;
+  }
+  renderCalendar();
+  calendarPopover.hidden = false;
+  datePickerBtn.setAttribute('aria-expanded', 'true');
+}
+
+function closeCalendar() {
+  calendarPopover.hidden = true;
+  datePickerBtn.setAttribute('aria-expanded', 'false');
+}
+
 function renderScheduleOptions() {
-  dateSelect.innerHTML = '';
   if (schedules.length === 0) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = 'ยังไม่มีผังออกอากาศ';
-    dateSelect.appendChild(opt);
-    dateSelect.disabled = true;
+    datePickerLabel.textContent = 'ยังไม่มีผังออกอากาศ';
     refreshBtn.disabled = true;
     exportBtn.disabled = true;
     emptyState.hidden = false;
     workspace.hidden = true;
     logErrorBanner.hidden = true;
     logMeta.textContent = 'ยังไม่มีผังออกอากาศ';
+    renderCalendar();
     return;
   }
 
-  for (const s of schedules) {
-    const opt = document.createElement('option');
-    opt.value = s.date;
-    opt.textContent = s.date;
-    dateSelect.appendChild(opt);
-  }
-  dateSelect.disabled = false;
   refreshBtn.disabled = false;
   exportBtn.disabled = false;
   emptyState.hidden = true;
   workspace.hidden = false;
+  renderCalendar();
 }
 
 async function selectDate(date, updateHash = true) {
   if (!date) return;
   currentDate = date;
-  dateSelect.value = date;
+  datePickerLabel.textContent = date;
+  const [y, m] = date.split('-').map(Number);
+  if (y && m) {
+    calYear = y;
+    calMonth = m - 1;
+  }
+  renderCalendar();
   if (updateHash && window.location.hash !== `#${date}`) {
     window.location.hash = `#${date}`;
   }
@@ -418,9 +502,42 @@ tableWrap.addEventListener('scroll', () => {
   }
 });
 
-dateSelect.addEventListener('change', () => {
-  if (dateSelect.value) {
-    selectDate(dateSelect.value, true);
+datePickerBtn.addEventListener('click', () => {
+  if (calendarPopover.hidden) {
+    openCalendar();
+  } else {
+    closeCalendar();
+  }
+});
+
+calPrevMonth.addEventListener('click', () => {
+  calMonth--;
+  if (calMonth < 0) {
+    calMonth = 11;
+    calYear--;
+  }
+  renderCalendar();
+});
+
+calNextMonth.addEventListener('click', () => {
+  calMonth++;
+  if (calMonth > 11) {
+    calMonth = 0;
+    calYear++;
+  }
+  renderCalendar();
+});
+
+document.addEventListener('click', e => {
+  if (!calendarPopover.hidden && !datePickerWrap.contains(e.target)) {
+    closeCalendar();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !calendarPopover.hidden) {
+    closeCalendar();
+    datePickerBtn.focus();
   }
 });
 
