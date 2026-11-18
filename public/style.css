@@ -192,6 +192,12 @@ body {
   cursor: not-allowed;
 }
 
+.btn.is-active {
+  background-color: #1e293b;
+  border-color: var(--accent-focus);
+  color: #e0f2fe;
+}
+
 .btn-primary {
   background-color: #2563eb;
   border-color: #3b82f6;
@@ -738,6 +744,70 @@ body {
   background-color: var(--tally-pending-bg);
   color: #fcd34d;
   border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.row-extra-toggle td {
+  background-color: rgba(79, 70, 229, 0.08);
+  padding: 6px 12px;
+  border-bottom: 1px dashed rgba(129, 140, 248, 0.3);
+}
+
+.extra-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(129, 140, 248, 0.45);
+  border-radius: 4px;
+  padding: 3px 10px;
+  color: #c7d2fe;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.extra-toggle-btn:hover {
+  background-color: rgba(99, 102, 241, 0.25);
+  border-color: #a5b4fc;
+  color: #eef2ff;
+}
+
+.schedule-table tbody tr.row-extra-log {
+  background-color: rgba(79, 70, 229, 0.11);
+}
+
+.schedule-table tbody tr.row-extra-log:hover {
+  background-color: rgba(79, 70, 229, 0.18);
+}
+
+.row-extra-log td {
+  color: #c7d2fe;
+  font-size: 13px;
+  border-bottom: 1px dashed rgba(129, 140, 248, 0.22);
+}
+
+.row-extra-log td.col-brk {
+  color: #a5b4fc;
+}
+
+.row-extra-log td:first-child {
+  box-shadow: inset 3px 0 0 #818cf8;
+}
+
+.row-extra-log .spot-code {
+  color: #c4b5fd;
+}
+
+.status-extra {
+  background-color: rgba(99, 102, 241, 0.2);
+  color: #e0e7ff;
+  border: 1px solid rgba(129, 140, 248, 0.5);
+}
+
+.tally-extra {
+  background-color: #818cf8;
+  box-shadow: 0 0 6px rgba(129, 140, 248, 0.65);
 }
 
 .empty-filter-row td {

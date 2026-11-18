@@ -11,6 +11,8 @@ const calLegendText = document.getElementById('calLegendText');
 const fileInput = document.getElementById('fileInput');
 const importBtn = document.getElementById('importBtn');
 const emptyImportBtn = document.getElementById('emptyImportBtn');
+const toggleExtraBtn = document.getElementById('toggleExtraBtn');
+const countExtra = document.getElementById('countExtra');
 const refreshBtn = document.getElementById('refreshBtn');
 const exportBtn = document.getElementById('exportBtn');
 const logMeta = document.getElementById('logMeta');
@@ -45,6 +47,7 @@ let scheduleDateSet = new Set();
 let currentDate = '';
 let currentData = null;
 let activeFilter = 'all';
+let showAllExtraLogs = false;
 
 const now = new Date();
 let calYear = now.getFullYear();
@@ -182,6 +185,7 @@ function closeCalendar() {
 function renderScheduleOptions() {
   if (schedules.length === 0) {
     datePickerLabel.textContent = 'ยังไม่มีผังออกอากาศ';
+    toggleExtraBtn.disabled = true;
     refreshBtn.disabled = true;
     exportBtn.disabled = true;
     emptyState.hidden = false;
@@ -192,6 +196,7 @@ function renderScheduleOptions() {
     return;
   }
 
+  toggleExtraBtn.disabled = false;
   refreshBtn.disabled = false;
   exportBtn.disabled = false;
   emptyState.hidden = true;
@@ -273,6 +278,10 @@ function createStatusPill(status) {
     pill.className = 'status-pill status-missing';
     dot.className = 'tally-dot tally-missing';
     label.textContent = 'ไม่พบการเล่น';
+  } else if (status === 'extra') {
+    pill.className = 'status-pill status-extra';
+    dot.className = 'tally-dot tally-extra';
+    label.textContent = 'นอกผัง';
   } else {
     pill.className = 'status-pill status-pending';
     dot.className = 'tally-dot tally-pending';
@@ -294,6 +303,8 @@ function renderComparison() {
   countPending.textContent = summary.pending;
   countTotal.textContent = summary.total;
 
+  updateExtraToggleBtn(summary.unmatchedLogs ?? 0);
+
   const latestText = lastLogTime || '—';
   logMeta.textContent = `log ล่าสุด ${latestText} · ${logCount} รายการ`;
 
@@ -306,6 +317,108 @@ function renderComparison() {
   }
 
   renderTableRows(rows);
+}
+
+function updateExtraToggleBtn(unmatchedCount) {
+  const n = unmatchedCount ?? currentData?.summary?.unmatchedLogs ?? 0;
+  const labelPrefix = showAllExtraLogs ? 'ซ่อนรายการนอกผัง' : 'แสดงรายการนอกผัง';
+  toggleExtraBtn.innerHTML = `${labelPrefix} (<span id="countExtra">${n}</span>)`;
+  toggleExtraBtn.classList.toggle('is-active', showAllExtraLogs);
+  toggleExtraBtn.setAttribute('aria-pressed', String(showAllExtraLogs));
+}
+
+function appendExtraLogsGroup(extraLogs) {
+  if (!extraLogs || extraLogs.length === 0 || activeFilter !== 'all') return;
+
+  const firstTime = extraLogs.find(l => l.startTime)?.startTime;
+  const lastTime = [...extraLogs].reverse().find(l => l.startTime)?.startTime;
+  const timeRange =
+    firstTime && lastTime && firstTime !== lastTime
+      ? ` (${firstTime} – ${lastTime})`
+      : firstTime
+        ? ` (${firstTime})`
+        : '';
+
+  const toggleTr = document.createElement('tr');
+  toggleTr.className = 'row-extra-toggle';
+  const toggleTd = document.createElement('td');
+  toggleTd.colSpan = 8;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'extra-toggle-btn';
+
+  const detailRows = [];
+  let expanded = showAllExtraLogs;
+
+  const updateLabel = () => {
+    const arrow = expanded ? '▾' : '▸';
+    const action = expanded ? 'ซ่อน' : 'แสดง';
+    btn.textContent = `${arrow} ${action}รายการจาก Log ที่ไม่ตรงกับผัง ${extraLogs.length} รายการ${timeRange}`;
+    btn.setAttribute('aria-expanded', String(expanded));
+    for (const r of detailRows) {
+      r.hidden = !expanded;
+    }
+  };
+
+  btn.addEventListener('click', () => {
+    expanded = !expanded;
+    updateLabel();
+  });
+
+  toggleTd.appendChild(btn);
+  toggleTr.appendChild(toggleTd);
+  scheduleBody.appendChild(toggleTr);
+
+  for (const log of extraLogs) {
+    const tr = document.createElement('tr');
+    tr.className = 'row-item row-extra-log';
+    tr.hidden = !expanded;
+
+    const tdBrk = document.createElement('td');
+    tdBrk.className = 'col-brk';
+    tdBrk.textContent = 'นอกผัง';
+
+    const tdTitle = document.createElement('td');
+    tdTitle.className = 'col-title timecode-empty';
+    tdTitle.textContent = '—';
+
+    const tdLen = document.createElement('td');
+    tdLen.className = 'col-len';
+    tdLen.textContent = log.duration || '';
+
+    const tdAoe = document.createElement('td');
+    tdAoe.className = 'col-aoe';
+    tdAoe.textContent = '';
+
+    const tdQt = document.createElement('td');
+    tdQt.className = 'col-qt';
+    tdQt.textContent = '';
+
+    const tdTime = document.createElement('td');
+    tdTime.className = 'col-time';
+    if (log.startTime) {
+      tdTime.classList.add('timecode-played');
+      tdTime.textContent = log.startTime;
+    } else {
+      tdTime.classList.add('timecode-empty');
+      tdTime.textContent = '—';
+    }
+
+    const tdStatus = document.createElement('td');
+    tdStatus.className = 'col-status';
+    tdStatus.appendChild(createStatusPill('extra'));
+
+    const tdLogTitle = document.createElement('td');
+    tdLogTitle.className = 'col-log-title';
+    renderTitleCell(tdLogTitle, log.title);
+
+    tr.append(tdBrk, tdTitle, tdLen, tdAoe, tdQt, tdTime, tdStatus, tdLogTitle);
+    detailRows.push(tr);
+    scheduleBody.appendChild(tr);
+  }
+
+  updateLabel();
 }
 
 function renderTableRows(rows) {
@@ -401,6 +514,8 @@ function renderTableRows(rows) {
     }
 
     for (const item of g.items) {
+      appendExtraLogsGroup(item.extraLogsBefore);
+
       renderedItems++;
       const tr = document.createElement('tr');
       tr.className = `row-item row-${item.status}`;
@@ -443,12 +558,14 @@ function renderTableRows(rows) {
 
       const tdLogTitle = document.createElement('td');
       tdLogTitle.className = 'col-log-title';
-      if (item.status === 'swapped' && item.logTitle) {
+      if (item.logTitle) {
         renderTitleCell(tdLogTitle, item.logTitle);
       }
 
       tr.append(tdBrk, tdTitle, tdLen, tdAoe, tdQt, tdTime, tdStatus, tdLogTitle);
       scheduleBody.appendChild(tr);
+
+      appendExtraLogsGroup(item.extraLogsAfter);
     }
   }
 
@@ -545,6 +662,14 @@ window.addEventListener('hashchange', () => {
   const hashDate = getHashDate();
   if (hashDate && hashDate !== currentDate && schedules.some(s => s.date === hashDate)) {
     selectDate(hashDate, false);
+  }
+});
+
+toggleExtraBtn.addEventListener('click', () => {
+  showAllExtraLogs = !showAllExtraLogs;
+  updateExtraToggleBtn();
+  if (currentData) {
+    renderTableRows(currentData.rows);
   }
 });
 
