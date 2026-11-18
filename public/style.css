@@ -87,6 +87,23 @@
   display: none !important;
 }
 
+html,
+body,
+.table-wrap,
+.program-list {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar,
+.program-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 body {
   margin: 0;
   background-color: var(--bg-base);
@@ -95,6 +112,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 .sr-only {
@@ -382,7 +400,7 @@ body {
 .container {
   max-width: 1520px;
   margin: 0 auto;
-  padding: 16px 24px 48px;
+  padding: 14px 24px 16px;
 }
 
 /* Banners */
@@ -589,8 +607,8 @@ body {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  overflow-x: auto;
-  max-height: calc(100vh - 180px);
+  overflow-x: hidden;
+  max-height: calc(100vh - 172px);
   overflow-y: auto;
 }
 
@@ -598,7 +616,6 @@ body {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 920px;
 }
 
 .schedule-table thead th {
@@ -677,14 +694,14 @@ body {
   margin-right: 8px;
 }
 
-.col-brk { width: 84px; white-space: nowrap; color: var(--text-secondary); font-weight: 600; }
-.col-title { min-width: 340px; }
-.col-len { width: 84px; text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
-.col-aoe { width: 100px; font-family: var(--font-mono); color: var(--text-secondary); }
-.col-qt { width: 150px; font-family: var(--font-mono); color: var(--text-secondary); }
-.col-time { width: 120px; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
-.col-status { width: 148px; white-space: nowrap; }
-.col-log-title { min-width: 280px; color: var(--text-secondary); }
+.col-brk { width: 72px; white-space: nowrap; color: var(--text-secondary); font-weight: 600; }
+.col-title { width: 28%; overflow-wrap: anywhere; }
+.col-len { width: 76px; text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-secondary); white-space: nowrap; }
+.col-aoe { width: 84px; font-family: var(--font-mono); color: var(--text-secondary); white-space: nowrap; }
+.col-qt { width: 132px; font-family: var(--font-mono); color: var(--text-secondary); white-space: nowrap; }
+.col-time { width: 100px; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.col-status { width: 132px; white-space: nowrap; }
+.col-log-title { width: 28%; color: var(--text-secondary); overflow-wrap: anywhere; }
 
 .schedule-table thead th.col-len {
   text-align: right;
